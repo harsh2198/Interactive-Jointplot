@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>joint plot</title>
+
+    <script src="scatter_plot.js?2"></script>
+    <script src="bar_plot.js?2"></script>
+
+    <link rel="stylesheet" href="../styles/style.css">
+    <style>
+        .fig{
+            fill: #faf8f8;
+        }
+        table{
+            border: 1px solid #d2bcbc;
+            border-collapse: collapse;
+        }
+        td{
+            border: 1px solid #d2bcbc;
+            border-collapse: collapse;
+            padding: 10px;
+            width: 10vw;
+        }
+        .legend{
+            text-anchor: middle;
+            font-size: 20pt;
+            font-family: sans-serif;
+        }
+        .title{
+            font-size: 50pt;
+            font-family: sans-serif;
+            text-anchor: middle;
+            color: black;
+            z-index: 1001;
+        }
+        .highlighted{
+            fill: rgb(47, 240, 8) ;
+            fill-opacity: 1;
+            stroke-width: 5;
+            stroke: rgba(0, 0, 0, 0.411);
+        }
+    </style>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+</head>
+<body>
+
+<h1>jointplot</h1>
+
+<div id="buttons"></div>
+
+<h1>Adelie Penguin Colored by Island</h1>
+<table>
+    <tr>
+        <td><svg width="500px" height="150px"  id="top1"></svg></td>
+        <td><svg width="150px" height = "150px" id = "legend1"></svg></td>
+    </tr>
+    <tr>
+        <td><svg width="500px" height="500px" viewBox="0 0 1000 1000" id="main1"></svg></td>
+        <td><svg width="150px" height="500px" id="right1"></svg></td>
+    </tr>
+</table>
+<br><br>
+<h1> Gentoo Penguin Colored by Island</h1>
+<table>
+    <tr>
+        <td><svg width="500px" height="150px"  id="top2"></svg></td>
+        <td><svg width="150px" height = "150px" id = "legend2"></svg></td>
+    </tr>
+    <tr>
+        <td><svg width="500px" height="500px" viewBox="0 0 1000 1000" id="main2"></svg></td>
+        <td><svg width="150px" height="500px" id="right2"></svg></td>
+    </tr>
+</table>
+<br><br>
+<h1>Chinstrap Penguin Colored by Island</h1>
+<table>
+    <tr>
+        <td><svg width="500px" height="150px"  id="top3"></svg></td>
+        <td><svg width="150px" height = "150px" id = "legend3"></svg></td>
+    </tr>
+    <tr>
+        <td><svg width="500px" height="500px" viewBox="0 0 1000 1000" id="main3"></svg></td>
+        <td><svg width="150px" height="500px" id="right3"></svg></td>
+    </tr>
+</table>
+<script>
+    let palmer_penguin_species = "../Data/palmer_penguin_species.tsv";
+    // loading data
+    d3.tsv(palmer_penguin_species).then(function (data){
+        Plot(data,"Adelie","#main","#top","#right","main1","top1","right1","culmen_length_mm","culmen_depth_mm","#legend1","Adelie")
+        Plot(data,"Gentoo","#main2","#top2","#right2","main2","top2","right2","culmen_length_mm","culmen_depth_mm","#legend2","Gentoo")
+        Plot(data,"Chinstrap","#main3","#top3","#right3","main3","top3","right3","culmen_length_mm","culmen_depth_mm","#legend3","Chinstrap")
+    })
+
+
+    function Plot(data,graphTitle,mainSVG,topSVG,rightSVG,main,top,right,x_label,y_label,legend,speciesFilter,barBins) {
+        // Subplots
+        let fig_main = d3.select(mainSVG)
+            .append("g")
+            .append('rect')
+            .attr("class", "fig")
+            .attr("width", "100%")
+            .attr("height", "100%")
+        // top svg
+        let fig_top = d3.select(topSVG)
+            .append("g")
+            .append('rect')
+            .attr("class", "fig")
+            .attr("width", "100%")
+            .attr("height", "100%")
+        // right svg
+        let fig_right = d3.select(rightSVG)
+            .append("g")
+            .append('rect')
+            .attr("class", "fig")
+            .attr("width", "100%")
+            .attr("height", "100%")
+        
+        data = data.filter(function(d) { return d.species === speciesFilter })
+
+        // fetch data from table
+            let x= d3.map(data, function (d) {
+                return +d[x_label]
+            })
+            let y= d3.map(data, function (d) {
+                return +d[y_label]
+            })
+            let flipper_length_mm = d3.map(data, function (d) {
+                return +d.flipper_length_mm
+            })
+            let species = d3.map(data, function (d) {
+                return d.species
+            })
+            let species_types = new Set(species)
+
+            let species_code = d3.map(data, function (d) {
+                species = d.species
+                if (species === "Adelie") {
+                    return 0
+                } else if (species === "Gentoo") {
+                    return 1
+                } else {
+                    return 2
+                }
+            })
+        let island_code = d3.map(data, function (d) {
+            let island =  d.island
+            if (island === "Torgersen") {
+                return 0
+            } else if (island === "Biscoe") {
+                return 1
+            } else {
+                return 2
+            }
+        })
+
+            // main svg
+            scatter_plot(x,
+                y,
+                flipper_length_mm,
+                island_code,
+                main,
+                title = graphTitle,
+                xLabel = x_label,
+                yLabel = y_label,
+                legend
+                );
+            //#############
+        bar_plot(x, barBins, top)
+        h_bar_plot(y, barBins, right)
+        const numBins = [2,5,10,20,25,50];
+        let interface = d3.selectAll("#buttons");
+        interface.selectAll('buttons')
+            .data(numBins)
+            .enter()
+            .append("button")
+            .text(d=>d)
+            .on("click",(m,d)=>{
+                console.log(m,d)
+                updateBins(d)})
+        function updateBins(barBins) {
+            d3.selectAll("#"+top+" > *").remove();
+            d3.selectAll("#"+right+" > *").remove();
+            bar_plot(x, barBins, top)
+            h_bar_plot(y, barBins, right)
+            d3.select(".infobox .numBins").text("Number of Bins:" + barBins);
+        }
+
+
+    }
+
+</script>
+
+</body>
+</html>
