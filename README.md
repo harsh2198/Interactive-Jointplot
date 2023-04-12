@@ -1,2 +1,2 @@
-# Week 10 jointplot exercise 
+#Created a interactive web jointplot visualization using D3.js.
  
